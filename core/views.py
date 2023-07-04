@@ -1,3 +1,4 @@
+from operator import itemgetter
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
@@ -11,6 +12,7 @@ from .forms import CheckoutForm, CouponForm, RefundForm
 from .models import Item, OrderItem, Order, BillingAddress, Payment, Coupon, Refund, Category
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
+from .cities import get_cities
 
 # Create your views here.
 import random
@@ -157,12 +159,17 @@ class CheckoutView(View):
         try:
             order = Order.objects.get(user=self.request.user, ordered=False)
             form = CheckoutForm()
+
+            list_to_be_sorted = get_cities()
+
             context = {
                 'form': form,
                 'couponform': CouponForm(),
                 'order': order,
-                'DISPLAY_COUPON_FORM': True
+                'DISPLAY_COUPON_FORM': True,
+                "cities": list_to_be_sorted,
             }
+            
             return render(self.request, "checkout.html", context)
 
         except ObjectDoesNotExist:
@@ -190,10 +197,11 @@ class CheckoutView(View):
                     apartment_address=apartment_address,
                     country=country,
                     zip=zip,
-                    address_type='B'
+                    address_type='B',
                 )
                 billing_address.save()
                 order.billing_address = billing_address
+                order.shipping_address = billing_address
                 order.save()
 
                 # add redirect to the selected payment option
